@@ -16,20 +16,31 @@ document.addEventListener('DOMContentLoaded', () => {
   emailQuote.style.cssText = 'background:#0c2138;color:#fff;margin-left:8px';
   emailQuote.innerHTML = 'Solicitar por correo <i data-lucide="mail"></i>';
   whatsapp?.insertAdjacentElement('afterend', emailQuote);
-  form?.addEventListener('submit', event => {
+  form?.addEventListener('submit', async event => {
     event.preventDefault();
     const data = new FormData(form);
     const needs = data.getAll('needs');
     if (!needs.length) { alert('Selecciona al menos una necesidad para preparar tu orientación.'); return; }
     const company = data.get('company');
+    const basePrices = { Microempresa: 150, 'Pequeña empresa': 300, 'Mediana empresa': 550, 'Empresa en expansión': 900 };
+    const extras = { 'Planeamiento tributario': 120, 'Finanzas y flujo de caja': 180, 'Auditoría o NIIF': 350, 'Financiamiento bancario': 250 };
+    const total = (basePrices[company] || 150) + needs.reduce((sum, item) => sum + (extras[item] || 0), 0);
+    const amount = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 0 }).format(total);
     const serviceText = needs.join(', ');
     const tailored = needs.includes('Auditoría o NIIF') ? 'Por la naturaleza de tu consulta, recomendamos una evaluación técnica inicial para definir el alcance y los entregables.' : needs.includes('Planeamiento tributario') ? 'Vemos oportunidades para ordenar tus obligaciones y evaluar una estrategia tributaria dentro del marco legal.' : 'Podemos ayudarte a ordenar la información de tu empresa y convertirla en decisiones de gestión.';
     resultCopy.textContent = `Para tu ${company}, la ruta inicial considera: ${serviceText}. ${tailored}`;
     const message = `Hola GESCO, deseo una cotización. Empresa: ${company}. Ventas mensuales: ${data.get('sales')}. Necesito: ${serviceText}. Mi nombre es ${data.get('name')}, WhatsApp: ${data.get('phone')}, correo: ${data.get('email')}.`;
+    resultCopy.textContent = `Tu cotización referencial es ${amount} mensuales + IGV. Incluye: ${serviceText}. También la enviaremos a tu correo.`;
     whatsapp.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     emailQuote.href = `mailto:${businessEmail}?subject=${encodeURIComponent('Solicitud de cotización - ' + data.get('name'))}&body=${encodeURIComponent(message)}`;
     window.lucide?.createIcons({ nodes: [emailQuote] });
     form.hidden = true; result.hidden = false; result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try {
+      const response = await fetch('/api/cotizacion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), phone: data.get('phone'), company, sales: data.get('sales'), needs }) });
+      if (!response.ok) throw new Error('email');
+    } catch {
+      resultCopy.textContent = `Tu cotización referencial es ${amount} mensuales + IGV. El envío automático está en configuración; usa WhatsApp o correo para recibirla de inmediato.`;
+    }
   });
   document.querySelector('#restart-quote')?.addEventListener('click', () => { form.reset(); form.hidden = false; result.hidden = true; });
 
