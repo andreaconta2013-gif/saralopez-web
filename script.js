@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const result = document.querySelector('#quote-result');
   const resultCopy = document.querySelector('#quote-copy');
   const whatsapp = document.querySelector('#whatsapp-quote');
+  const businessEmail = 'andreaconta2013@gmail.com';
+  const whatsappNumber = '51999999999'; // Reemplázalo por el WhatsApp comercial de GESCO.
+  const emailQuote = document.createElement('a');
+  emailQuote.className = 'button';
+  emailQuote.style.cssText = 'background:#0c2138;color:#fff;margin-left:8px';
+  emailQuote.innerHTML = 'Solicitar por correo <i data-lucide="mail"></i>';
+  whatsapp?.insertAdjacentElement('afterend', emailQuote);
   form?.addEventListener('submit', event => {
     event.preventDefault();
     const data = new FormData(form);
@@ -19,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tailored = needs.includes('Auditoría o NIIF') ? 'Por la naturaleza de tu consulta, recomendamos una evaluación técnica inicial para definir el alcance y los entregables.' : needs.includes('Planeamiento tributario') ? 'Vemos oportunidades para ordenar tus obligaciones y evaluar una estrategia tributaria dentro del marco legal.' : 'Podemos ayudarte a ordenar la información de tu empresa y convertirla en decisiones de gestión.';
     resultCopy.textContent = `Para tu ${company}, la ruta inicial considera: ${serviceText}. ${tailored}`;
     const message = `Hola GESCO, deseo una cotización. Empresa: ${company}. Ventas mensuales: ${data.get('sales')}. Necesito: ${serviceText}. Mi nombre es ${data.get('name')}, WhatsApp: ${data.get('phone')}, correo: ${data.get('email')}.`;
-    whatsapp.href = `https://wa.me/51999999999?text=${encodeURIComponent(message)}`;
+    whatsapp.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    emailQuote.href = `mailto:${businessEmail}?subject=${encodeURIComponent('Solicitud de cotización - ' + data.get('name'))}&body=${encodeURIComponent(message)}`;
+    window.lucide?.createIcons({ nodes: [emailQuote] });
     form.hidden = true; result.hidden = false; result.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
   document.querySelector('#restart-quote')?.addEventListener('click', () => { form.reset(); form.hidden = false; result.hidden = true; });
