@@ -1,7 +1,0 @@
-{
-  "name": "gesco-cotizaciones",
-  "private": true,
-  "dependencies": {
-    "pdf-lib": "^1.17.1"
-  }
-}
