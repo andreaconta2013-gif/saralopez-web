@@ -8,15 +8,30 @@ async function send({ to, subject, html, replyTo }) {
   if (!response.ok) throw new Error(await response.text());
 }
 
+async function saveQuote({ name, email, phone, company, sales, needs, total }) {
+  const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/quote_requests`, {
+    method: 'POST',
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ name, email, phone, company, monthly_sales: sales, services: needs, monthly_quote: total }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
-  if (!process.env.RESEND_API_KEY || !process.env.FROM_EMAIL) return res.status(503).json({ error: 'Correo no configurado' });
+  if (!process.env.RESEND_API_KEY || !process.env.FROM_EMAIL || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return res.status(503).json({ error: 'Servicio no configurado' });
   const { name, email, phone, company, sales, needs = [] } = req.body || {};
   if (!name || !email || !phone || !company || !needs.length) return res.status(400).json({ error: 'Datos incompletos' });
   const total = quote(company, needs);
   const amount = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 0 }).format(total);
   const services = needs.map(esc).join(', ');
   try {
+    await saveQuote({ name, email, phone, company, sales, needs, total });
     await Promise.all([
       send({ to: 'andreaconta2013@gmail.com', replyTo: email, subject: `Nueva cotización: ${esc(name)} — ${amount}/mes`, html: `<h2>Nueva solicitud de cotización</h2><p><b>Cliente:</b> ${esc(name)}</p><p><b>Correo:</b> ${esc(email)}</p><p><b>WhatsApp:</b> ${esc(phone)}</p><p><b>Empresa:</b> ${esc(company)}</p><p><b>Ventas:</b> ${esc(sales)}</p><p><b>Servicios:</b> ${services}</p><p><b>Cotización:</b> ${amount} mensuales + IGV</p>` }),
       send({ to: email, replyTo: 'andreaconta2013@gmail.com', subject: `Tu cotización GESCO — ${amount}/mes`, html: `<h2>Hola, ${esc(name)}</h2><p>Gracias por solicitar una cotización con GESCO.</p><p>Para <b>${esc(company)}</b>, con <b>${services}</b>, tu inversión referencial es:</p><p style="font-size:26px;font-weight:bold;color:#007d79">${amount} mensuales + IGV</p><p>Incluye el servicio base y las soluciones seleccionadas. Nuestro equipo validará el alcance y te contactará si requiere información adicional.</p><p>Equipo GESCO</p>` }),
